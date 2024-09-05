@@ -2,6 +2,8 @@ const gameArea = document.getElementById('game-area');
 const scoreDisplay = document.getElementById('score');
 const correctPopsDisplay = document.getElementById('correct-pops');  // Display for correct pops
 const mistakesDisplay = document.getElementById('mistakes');  // Display for mistakes
+const timerDisplay = document.getElementById('timer');  // Display for timer
+const correctPopsPercentage = document.getElementById('correct-pops-percentage');  // Display for correct pops percentage
 let score = 0;
 let correctPops = 0;
 let mistakes = 0;
@@ -118,6 +120,30 @@ function handleKeyPress(event) {
     correctPopsDisplay.textContent = `Correct Pops: ${correctPops}`;  // Update correct pops counter
     mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
 }
+
+// Set up the game timer that counts elapse time in mm:ss format
+
+let time = 0;
+let timer = setInterval(function() {
+    time += 1;
+    let minutes = Math.floor(time / 60);
+    let seconds = time % 60;
+    if (seconds < 10) {
+        seconds = `0${seconds}`;
+    }
+    document.getElementById('timer').textContent = `Time: ${minutes}:${seconds}`;
+}, 1000);
+
+// Calculate percentage of correct pops
+
+let correctPopsPercentageValue = 0;
+let correctPopsPercentageTimer = setInterval(function() {
+    if (correctPops + mistakes > 0) {
+        correctPopsPercentageValue = Math.round((correctPops / (correctPops + mistakes)) * 100);
+    }
+    document.getElementById('correct-pops-percentage').textContent = `Correct Pops Percentage: ${correctPopsPercentageValue}%`;
+}, 1000);
+
 
 // Set up the game loop
 function gameLoop() {
