@@ -1,6 +1,10 @@
 const gameArea = document.getElementById('game-area');
 const scoreDisplay = document.getElementById('score');
+const correctPopsDisplay = document.getElementById('correct-pops');  // Display for correct pops
+const mistakesDisplay = document.getElementById('mistakes');  // Display for mistakes
 let score = 0;
+let correctPops = 0;
+let mistakes = 0;
 const maxBalloons = 10;
 const minBalloons = 3;
 let balloons = [];
@@ -66,11 +70,14 @@ function animateBalloon(balloon) {
 
     function move() {
         if (position > gameArea.offsetHeight) {
+            // Balloon reached the top, missed
             gameArea.removeChild(balloon);
             balloons = balloons.filter(b => b !== balloon);
             currentLetters.delete(balloon.textContent);
             score -= 50;  // Deduct points when balloon reaches the top
+            mistakes += 1;  // Increment the missed counter
             scoreDisplay.textContent = `Score: ${score}`;
+            mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
         } else {
             position += speed;
             balloon.style.bottom = `${position}px`;
@@ -97,15 +104,19 @@ function handleKeyPress(event) {
             balloons = balloons.filter(b => b !== balloon);
             currentLetters.delete(balloon.textContent);
             score += 100;
+            correctPops += 1;  // Increment the correct pops counter
             popped = true;
         }
     });
 
     if (!popped) {
         score -= 25;  // Deduct points for wrong key press
+        mistakes += 1;  // Increment the mistakes counter
     }
 
     scoreDisplay.textContent = `Score: ${score}`;
+    correctPopsDisplay.textContent = `Correct Pops: ${correctPops}`;  // Update correct pops counter
+    mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
 }
 
 // Set up the game loop
