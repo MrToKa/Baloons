@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balloon Game – Setup</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .container { width: 90%; max-width: 520px; background: #fff; border: 2px solid #000; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    h1 { margin: 0 0 12px; font-family: Arial, sans-serif; font-size: 24px; text-align: center; }
+    fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 12px 0; padding: 10px 12px; }
+    legend { padding: 0 6px; font-weight: bold; }
+    .row { display: flex; gap: 12px; align-items: center; }
+    .row > div { flex: 1; }
+    label { font-family: Arial, sans-serif; font-size: 14px; }
+    input[type="number"] { width: 100%; padding: 6px 8px; font-size: 14px; }
+    .actions { display: flex; justify-content: center; margin-top: 12px; }
+    button { padding: 10px 16px; font-size: 16px; border: 1px solid #000; border-radius: 6px; background: #1976d2; color: #fff; cursor: pointer; }
+    button:disabled { background: #9e9e9e; cursor: not-allowed; }
+    .error { color: #c62828; font-family: Arial, sans-serif; font-size: 13px; margin-top: 6px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Balloon Game – Setup</h1>
+    <fieldset>
+      <legend>Characters</legend>
+      <label><input type="checkbox" id="lower" checked disabled /> Lowercase letters (a–z) — mandatory</label><br />
+      <label><input type="checkbox" id="upper" /> Uppercase letters (A–Z)</label><br />
+      <label><input type="checkbox" id="numbers" /> Numbers (0–9)</label><br />
+      <label><input type="checkbox" id="symbols" /> Symbols (~!@#$%...)</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Balloon Count</legend>
+      <div class="row">
+        <div>
+          <label for="min">Min on screen (3–20)</label>
+          <input id="min" type="number" min="3" max="20" value="3" />
+        </div>
+        <div>
+          <label for="max">Max on screen (3–20)</label>
+          <input id="max" type="number" min="3" max="20" value="10" />
+        </div>
+      </div>
+      <div id="err" class="error">Ensure Min ≤ Max within 3–20.</div>
+    </fieldset>
+
+    <div class="actions">
+      <button id="start">Start Game</button>
+    </div>
+  </div>
+
+  <script>
+    const lower = document.getElementById('lower');
+    const upper = document.getElementById('upper');
+    const numbers = document.getElementById('numbers');
+    const symbols = document.getElementById('symbols');
+    const minEl = document.getElementById('min');
+    const maxEl = document.getElementById('max');
+    const err = document.getElementById('err');
+    const startBtn = document.getElementById('start');
+
+    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+    function validate() {
+      let min = parseInt(minEl.value, 10);
+      let max = parseInt(maxEl.value, 10);
+      min = clamp(isNaN(min) ? 3 : min, 3, 20);
+      max = clamp(isNaN(max) ? 10 : max, 3, 20);
+      minEl.value = String(min);
+      maxEl.value = String(max);
+      const ok = min <= max;
+      err.style.display = ok ? 'none' : 'block';
+      startBtn.disabled = !ok;
+      return ok;
+    }
+
+    minEl.addEventListener('input', validate);
+    maxEl.addEventListener('input', validate);
+    [lower, upper, numbers, symbols].forEach(cb => cb.addEventListener('change', validate));
+
+    startBtn.addEventListener('click', () => {
+      if (!validate()) return;
+      const params = new URLSearchParams({
+        lower: 'true',
+        upper: String(upper.checked),
+        numbers: String(numbers.checked),
+        symbols: String(symbols.checked),
+        min: minEl.value,
+        max: maxEl.value,
+      });
+      window.location.href = `baloons.html?${params.toString()}`;
+    });
+
+    validate();
+  </script>
+</body>
+</html>
