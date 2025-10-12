@@ -1,62 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letter Balloon Game</title>
-    <link rel="stylesheet" href="styles.css">
-    <script>
-      (function(){
-        const key = 'theme-preference';
-        const saved = localStorage.getItem(key) || 'auto';
-        const root = document.documentElement;
-        if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved); else root.removeAttribute('data-theme');
-        window.__applyTheme = function(v){
-          if (v === 'auto') { localStorage.setItem(key, 'auto'); root.removeAttribute('data-theme'); }
-          else { localStorage.setItem(key, v); root.setAttribute('data-theme', v); }
-        };
-        window.__getTheme = function(){ return localStorage.getItem(key) || 'auto'; };
-      })();
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Letter Balloon Game</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function(){
+      const key = 'theme-preference';
+      const root = document.documentElement;
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const getPref = () => localStorage.getItem(key) || 'auto';
+      const apply = (v) => { const mode = (v==='light'||v==='dark')?v:(media.matches?'dark':'light'); root.classList.toggle('dark', mode==='dark'); };
+      apply(getPref());
+      const sync = () => { if (getPref()==='auto') apply('auto'); };
+      media.addEventListener ? media.addEventListener('change', sync) : media.addListener(sync);
+      window.__applyTheme = v => { localStorage.setItem(key, v); apply(v); };
+      window.__getTheme = getPref;
+    })();
+  </script>
 </head>
 <body>
-    <div class="theme-control" aria-label="Theme selector">
-      <span id="theme-icon" class="theme-icon" aria-hidden="true">🌓</span>
-      <span class="label">Theme</span>
-      <label for="theme-select" class="sr-only">Theme</label>
-      <select id="theme-select" class="theme-select">
-        <option value="auto">Auto</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
+  <div class="theme-control" aria-label="Theme selector">
+    <span id="theme-icon" class="theme-icon" aria-hidden="true">🌓</span>
+    <span class="label">Theme</span>
+    <label for="theme-select" class="sr-only">Theme</label>
+    <select id="theme-select" class="theme-select">
+      <option value="auto">Auto</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  </div>
+
+  <div id="game-info">
+    <div id="correct-pops">Correct Pops: 0</div>
+    <div id="mistakes">Mistakes/Missed: 0</div>
+    <div id="timer">Time: 0:00</div>
+    <div id="correct-pops-percentage">Correct Pops Percentage: 0 %</div>
+    <div id="score">Score: 0</div>
+    <div>
+      <button id="new-game-btn" class="btn btn-outline">New Game</button>
     </div>
-    <div id="game-info">
-        <div id="correct-pops">Correct Pops: 0</div>
-        <div id="mistakes">Mistakes/Missed: 0</div>
-        <div id="timer">Time: 0:00</div>
-        <div id="correct-pops-percentage">Correct Pops Percentage: 0 %</div>
-        <div id="score">Score: 0</div>
-        <div>
-          <button id="new-game-btn" class="btn btn-outline" style="margin-top:8px;">New Game</button>
-        </div>
-      </div>
-    <div id="game-area">
-    </div>
-    <script>
-      (function(){
-        const sel = document.getElementById('theme-select');
-        const icon = document.getElementById('theme-icon');
-        function updateIcon(v){
-          const val = v || (window.__getTheme ? window.__getTheme() : 'auto');
-          icon && (icon.textContent = val === 'light' ? '☀️' : val === 'dark' ? '🌙' : '🌓');
-        }
-        if (sel) {
-          sel.value = window.__getTheme ? window.__getTheme() : 'auto';
-          updateIcon(sel.value);
-          sel.addEventListener('change', () => { window.__applyTheme && window.__applyTheme(sel.value); updateIcon(sel.value); });
-        }
-      })();
-    </script>
-    <script src="script.js"></script>
+  </div>
+
+  <div id="game-area"></div>
+
+  <script>
+    // Theme selector binding
+    (function(){
+      const sel = document.getElementById('theme-select');
+      const icon = document.getElementById('theme-icon');
+      const iconFor = v => v==='light' ? '☀️' : v==='dark' ? '🌙' : '🌓';
+      if (sel) {
+        const current = window.__getTheme ? window.__getTheme() : 'auto';
+        sel.value = current;
+        if (icon) icon.textContent = iconFor(current);
+        sel.addEventListener('change', () => {
+          if (window.__applyTheme) window.__applyTheme(sel.value);
+          if (icon) icon.textContent = iconFor(sel.value);
+        });
+      }
+    })();
+  </script>
+  <script src="script.js"></script>
 </body>
 </html>

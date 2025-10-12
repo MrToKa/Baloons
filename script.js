@@ -81,7 +81,7 @@ function randomUniqueChar() {
 // Function to create a balloon
 function createBalloon() {
     const balloon = document.createElement('div');
-    balloon.classList.add('balloon');
+    balloon.className = 'balloon';
     balloon.textContent = randomUniqueChar();
     balloon.style.left = `${Math.random() * (gameArea.offsetWidth - 50)}px`;
     balloon.style.bottom = '0px';
