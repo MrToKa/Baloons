@@ -105,3 +105,15 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
   font-size: 24px; font-weight: 700; color: #fff; user-select: none; border: 1px solid rgba(0,0,0,.35);
   box-shadow: 0 8px 14px rgba(0,0,0,.15), inset 0 -6px 18px rgba(255,255,255,.25); backdrop-filter: saturate(1.2);
 }
+
+#countdown-overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.6); color: #fff; z-index: 80; text-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  font-weight: 700; letter-spacing: 2px;
+}
+
+#countdown-overlay.hidden { display: none; }
+
+#countdown-text {
+  font-size: clamp(3rem, 14vw, 9rem); padding: 0 24px; text-align: center;
+}

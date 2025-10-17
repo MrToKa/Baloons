@@ -4,11 +4,19 @@ const correctPopsDisplay = document.getElementById('correct-pops');
 const mistakesDisplay = document.getElementById('mistakes');
 const timerDisplay = document.getElementById('timer');
 const correctPopsPercentage = document.getElementById('correct-pops-percentage');
+const countdownOverlay = document.getElementById('countdown-overlay');
+const countdownText = document.getElementById('countdown-text');
 let score = 0;
 let correctPops = 0;
 let mistakes = 0;
 let balloons = [];
 let currentLetters = new Set();
+let gameActive = false;
+let time = 0;
+let timer = null;
+let correctPopsPercentageValue = 0;
+let correctPopsPercentageTimer = null;
+let gameLoopHandle = null;
 
 // Read options from URL params
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -142,6 +150,7 @@ function animateBalloon(balloon) {
 
 // Function to handle key press
 function handleKeyPress(event) {
+    if (!gameActive) return;
     const key = event.key;
     if (!key || key.length !== 1) return; // ignore control keys
 
@@ -168,32 +177,75 @@ function handleKeyPress(event) {
     mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
 }
 
-// Set up the game timer that counts elapse time in mm:ss format
-
-let time = 0;
-let timer = setInterval(function() {
-    time += 1;
-    let minutes = Math.floor(time / 60);
-    let seconds = time % 60;
-    if (seconds < 10) {
-        seconds = `0${seconds}`;
-    }
-    document.getElementById('timer').textContent = `Time: ${minutes}:${seconds}`;
-}, 1000);
+// Set up the game timer that counts elapsed time in mm:ss format
+function startElapsedTimer() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => {
+        time += 1;
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        const paddedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+        if (timerDisplay) timerDisplay.textContent = `Time: ${minutes}:${paddedSeconds}`;
+    }, 1000);
+}
 
 // Calculate percentage of correct pops
+function startCorrectPopsPercentageTimer() {
+    if (correctPopsPercentageTimer) clearInterval(correctPopsPercentageTimer);
+    correctPopsPercentageTimer = setInterval(() => {
+        if (correctPops + mistakes > 0) {
+            correctPopsPercentageValue = Math.round((correctPops / (correctPops + mistakes)) * 100);
+        } else {
+            correctPopsPercentageValue = 0;
+        }
+        if (correctPopsPercentage) correctPopsPercentage.textContent = `Correct Pops Percentage: ${correctPopsPercentageValue}%`;
+    }, 1000);
+}
 
-let correctPopsPercentageValue = 0;
-let correctPopsPercentageTimer = setInterval(function() {
-    if (correctPops + mistakes > 0) {
-        correctPopsPercentageValue = Math.round((correctPops / (correctPops + mistakes)) * 100);
+function startGame() {
+    if (gameActive) return;
+    gameActive = true;
+    time = 0;
+    correctPopsPercentageValue = 0;
+    if (timerDisplay) timerDisplay.textContent = 'Time: 0:00';
+    if (correctPopsPercentage) correctPopsPercentage.textContent = 'Correct Pops Percentage: 0%';
+    startElapsedTimer();
+    startCorrectPopsPercentageTimer();
+    gameLoop();
+}
+
+function runCountdown(start = 3) {
+    if (!countdownOverlay || !countdownText) {
+        startGame();
+        return;
     }
-    document.getElementById('correct-pops-percentage').textContent = `Correct Pops Percentage: ${correctPopsPercentageValue}%`;
-}, 1000);
+
+    let current = start;
+    countdownOverlay.classList.remove('hidden');
+    countdownText.textContent = String(current);
+
+    const countdownInterval = setInterval(() => {
+        current -= 1;
+        if (current > 0) {
+            countdownText.textContent = String(current);
+            return;
+        }
+
+        clearInterval(countdownInterval);
+        countdownText.textContent = 'Go!';
+
+        setTimeout(() => {
+            countdownOverlay.classList.add('hidden');
+            countdownText.textContent = String(start);
+            startGame();
+        }, 600);
+    }, 1000);
+}
 
 
 // Set up the game loop
 function gameLoop() {
+    if (!gameActive) return;
     while (balloons.length < minBalloons) {
         createBalloon();
     }
@@ -201,17 +253,28 @@ function gameLoop() {
         createBalloon();
     }
 
-    setTimeout(gameLoop, 1000);
+    gameLoopHandle = setTimeout(gameLoop, 1000);
 }
 
 document.addEventListener('keydown', handleKeyPress);
-gameLoop();
+runCountdown();
 
 // Support New Game action: reset stats, stop timers, and go back to setup
 function resetGame() {
+    gameActive = false;
+    if (gameLoopHandle) {
+        clearTimeout(gameLoopHandle);
+        gameLoopHandle = null;
+    }
     // Stop timers
-    if (timer) clearInterval(timer);
-    if (correctPopsPercentageTimer) clearInterval(correctPopsPercentageTimer);
+    if (timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+    if (correctPopsPercentageTimer) {
+        clearInterval(correctPopsPercentageTimer);
+        correctPopsPercentageTimer = null;
+    }
 
     // Remove balloons from DOM
     balloons.forEach(b => { if (b.parentNode) b.parentNode.removeChild(b); });
@@ -228,10 +291,9 @@ function resetGame() {
     // Update UI
     if (scoreDisplay) scoreDisplay.textContent = 'Score: 0';
     if (correctPopsDisplay) correctPopsDisplay.textContent = 'Correct Pops: 0';
-    if (mistakesDisplay) mistakesDisplay.textContent = 'Mistakes/Missed: 0';
-    if (timerDisplay) timerDisplay.textContent = 'Time: 0:00';
-    const cpp = document.getElementById('correct-pops-percentage');
-    if (cpp) cpp.textContent = 'Correct Pops Percentage: 0%';
+   if (mistakesDisplay) mistakesDisplay.textContent = 'Mistakes/Missed: 0';
+   if (timerDisplay) timerDisplay.textContent = 'Time: 0:00';
+    if (correctPopsPercentage) correctPopsPercentage.textContent = 'Correct Pops Percentage: 0%';
 
     // Detach handlers just in case
     document.removeEventListener('keydown', handleKeyPress);
