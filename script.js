@@ -4,8 +4,10 @@ const correctPopsDisplay = document.getElementById('correct-pops');
 const mistakesDisplay = document.getElementById('mistakes');
 const timerDisplay = document.getElementById('timer');
 const correctPopsPercentage = document.getElementById('correct-pops-percentage');
+const difficultyDisplay = document.getElementById('difficulty');
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownText = document.getElementById('countdown-text');
+const keyboardLayer = document.getElementById('keyboard-layer');
 let score = 0;
 let correctPops = 0;
 let mistakes = 0;
@@ -21,18 +23,30 @@ let gameLoopHandle = null;
 // Read options from URL params
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 const params = new URLSearchParams(window.location.search);
+const keyboardVisibleParam = params.get('keyboardVisible');
+const keyboardVisible = keyboardVisibleParam !== '0';
+const DIFFICULTY_LEVELS = {
+  rookie: { multiplier: 0.5, label: 'Rookie' },
+  beginner: { multiplier: 0.75, label: 'Beginner' },
+  normal: { multiplier: 1, label: 'Normal' },
+  advanced: { multiplier: 1.25, label: 'Advanced' },
+  pro: { multiplier: 1.5, label: 'Pro' },
+};
 const opt = {
   lower: true, // lowercase is mandatory
   upper: params.get('upper') === 'true',
   numbers: params.get('numbers') === 'true',
   symbols: params.get('symbols') === 'true',
   min: clamp(parseInt(params.get('min')) || 3, 3, 20),
-  max: clamp(parseInt(params.get('max')) || 10, 3, 20)
+  max: clamp(parseInt(params.get('max')) || 10, 3, 20),
+  difficulty: (params.get('difficulty') || 'normal').toLowerCase(),
 };
 if (opt.max < opt.min) opt.max = opt.min;
+const difficultySetting = DIFFICULTY_LEVELS[opt.difficulty] || DIFFICULTY_LEVELS.normal;
 
 const maxBalloons = opt.max;
 const minBalloons = opt.min;
+const difficultyMultiplier = difficultySetting.multiplier;
 
 // Character pools
 const CHARS = {
@@ -41,6 +55,30 @@ const CHARS = {
   numbers: '0123456789',
   symbols: "~`!@#$%^&*()_+-=[]{}|;:',.<>/?\"\\"
 };
+
+// Keyboard helper layout with hand mapping for shift guidance
+const KEYBOARD_LAYOUT = [
+  [
+    { main: '`', alt: '~', hand: 'left' }, { main: '1', alt: '!', hand: 'left' }, { main: '2', alt: '@', hand: 'left' }, { main: '3', alt: '#', hand: 'left' }, { main: '4', alt: '$', hand: 'left' },
+    { main: '5', alt: '%', hand: 'left' }, { main: '6', alt: '^', hand: 'left' }, { main: '7', alt: '&', hand: 'right' }, { main: '8', alt: '*', hand: 'right' }, { main: '9', alt: '(', hand: 'right' },
+    { main: '0', alt: ')', hand: 'right' }, { main: '-', alt: '_', hand: 'right' }, { main: '=', alt: '+', hand: 'right' }
+  ],
+  [
+    { main: 'Q', hand: 'left' }, { main: 'W', hand: 'left' }, { main: 'E', hand: 'left' }, { main: 'R', hand: 'left' }, { main: 'T', hand: 'left' }, { main: 'Y', hand: 'right' }, { main: 'U', hand: 'right' }, { main: 'I', hand: 'right' }, { main: 'O', hand: 'right' }, { main: 'P', hand: 'right' },
+    { main: '[', alt: '{', hand: 'right' }, { main: ']', alt: '}', hand: 'right' }, { main: '\\', alt: '|', hand: 'right' }
+  ],
+  [
+    { main: 'A', hand: 'left' }, { main: 'S', hand: 'left' }, { main: 'D', hand: 'left' }, { main: 'F', hand: 'left' }, { main: 'G', hand: 'left' }, { main: 'H', hand: 'right' }, { main: 'J', hand: 'right' }, { main: 'K', hand: 'right' }, { main: 'L', hand: 'right' },
+    { main: ';', alt: ':', hand: 'right' }, { main: '\'', alt: '"', hand: 'right' }
+  ],
+  [
+    { main: 'Shift', value: 'shift-left', className: 'shift shift-left', hand: 'leftShift' },
+    { main: 'Z', hand: 'left' }, { main: 'X', hand: 'left' }, { main: 'C', hand: 'left' }, { main: 'V', hand: 'left' }, { main: 'B', hand: 'left' }, { main: 'N', hand: 'right' }, { main: 'M', hand: 'right' },
+    { main: ',', alt: '<', hand: 'right' }, { main: '.', alt: '>', hand: 'right' }, { main: '/', alt: '?', hand: 'right' },
+    { main: 'Shift', value: 'shift-right', className: 'shift shift-right', hand: 'rightShift' }
+  ],
+];
+const FLAT_KEYS = KEYBOARD_LAYOUT.flat();
 
 // Weighted selection: lowercase baseline 1.0; others 0.1 each if enabled
 function pickWeightedType() {
@@ -86,6 +124,105 @@ function randomUniqueChar() {
     return ch;
 }
 
+function buildKeyboardLayer() {
+    if (!keyboardLayer) return;
+    keyboardLayer.innerHTML = '';
+    KEYBOARD_LAYOUT.forEach((row, i) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = `keyboard-row row-${i + 1}`;
+        row.forEach(key => {
+            const keyEl = document.createElement('div');
+            keyEl.className = 'key';
+            if (key.className) {
+                key.className.split(' ').forEach(cls => keyEl.classList.add(cls));
+            }
+            const value = key.value !== undefined ? key.value : key.main;
+            keyEl.dataset.keyValue = String(value).toLowerCase();
+            if (key.alt) keyEl.dataset.altValue = key.alt.toLowerCase();
+            if (key.hand) keyEl.dataset.hand = key.hand;
+            const mainSpan = document.createElement('span');
+            mainSpan.className = 'key-main';
+            mainSpan.textContent = key.main;
+            keyEl.appendChild(mainSpan);
+            if (key.alt) {
+                const altSpan = document.createElement('span');
+                altSpan.className = 'key-alt';
+                altSpan.textContent = key.alt;
+                keyEl.appendChild(altSpan);
+            }
+            rowEl.appendChild(keyEl);
+        });
+        keyboardLayer.appendChild(rowEl);
+    });
+}
+
+function isUpperAlpha(ch) {
+    return /^[A-Z]$/.test(ch);
+}
+
+function keyInfoForChar(ch) {
+    if (!ch) return null;
+    const lower = ch.toLowerCase();
+    for (const key of FLAT_KEYS) {
+        const mainValue = key.value !== undefined ? String(key.value) : key.main;
+        const mainLower = mainValue.toLowerCase();
+        const altLower = key.alt ? key.alt.toLowerCase() : null;
+
+        if (mainLower === lower) {
+            return { key, requiresShift: isUpperAlpha(ch) };
+        }
+        if (altLower && altLower === lower) {
+            return { key, requiresShift: true };
+        }
+    }
+    return null;
+}
+
+function updateKeyboardHighlights() {
+    if (!keyboardLayer) return;
+    const active = new Set();
+    let leftShiftNeeded = false;
+    let rightShiftNeeded = false;
+    balloons.forEach(b => {
+        const ch = (b.textContent || '').trim();
+        if (!ch) return;
+        active.add(ch.toLowerCase());
+        active.add(ch);
+        const info = keyInfoForChar(ch);
+        if (info && info.requiresShift) {
+            if (info.key.hand === 'right') {
+                leftShiftNeeded = true;
+            } else if (info.key.hand === 'left') {
+                rightShiftNeeded = true;
+            }
+        }
+    });
+    const keyEls = keyboardLayer.querySelectorAll('.key');
+    keyEls.forEach(el => {
+        const keyValue = el.dataset.keyValue;
+        const altValue = el.dataset.altValue;
+        let isActive = false;
+        if (keyValue && (active.has(keyValue) || active.has((keyValue || '').toLowerCase()))) {
+            isActive = true;
+        }
+        if (altValue && (active.has(altValue) || active.has((altValue || '').toLowerCase()))) {
+            isActive = true;
+        }
+        if (keyValue === 'shift-left') {
+            isActive = isActive || leftShiftNeeded;
+        }
+        if (keyValue === 'shift-right') {
+            isActive = isActive || rightShiftNeeded;
+        }
+        el.classList.toggle('active', isActive);
+    });
+}
+
+function setKeyboardVisibility(show) {
+    if (!keyboardLayer) return;
+    keyboardLayer.classList.toggle('hidden', !show);
+}
+
 // Function to create a balloon
 function createBalloon() {
     const balloon = document.createElement('div');
@@ -94,13 +231,15 @@ function createBalloon() {
     balloon.style.left = `${Math.random() * (gameArea.offsetWidth - 50)}px`;
     balloon.style.bottom = '0px';
 
-    const speed = Math.random() * 3 + 1; // Adjusted to ensure higher max speed
+    const baseSpeed = Math.random() * 3 + 1;
+    const speed = baseSpeed * difficultyMultiplier;
     balloon.dataset.speed = speed;
     setBalloonColor(balloon, speed);
 
     balloons.push(balloon);
     gameArea.appendChild(balloon);
     animateBalloon(balloon);
+    updateKeyboardHighlights();
 }
 
 // Function to set balloon color based on speed
@@ -138,6 +277,7 @@ function animateBalloon(balloon) {
             mistakes += 1;  // Increment the missed counter
             scoreDisplay.textContent = `Score: ${score}`;
             mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
+            updateKeyboardHighlights();
         } else {
             position += speed;
             balloon.style.bottom = `${position}px`;
@@ -175,6 +315,7 @@ function handleKeyPress(event) {
     scoreDisplay.textContent = `Score: ${score}`;
     correctPopsDisplay.textContent = `Correct Pops: ${correctPops}`;  // Update correct pops counter
     mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
+    updateKeyboardHighlights();
 }
 
 // Set up the game timer that counts elapsed time in mm:ss format
@@ -207,6 +348,7 @@ function startGame() {
     gameActive = true;
     time = 0;
     correctPopsPercentageValue = 0;
+    if (difficultyDisplay) difficultyDisplay.textContent = `Difficulty: ${difficultySetting.label}`;
     if (timerDisplay) timerDisplay.textContent = 'Time: 0:00';
     if (correctPopsPercentage) correctPopsPercentage.textContent = 'Correct Pops Percentage: 0%';
     startElapsedTimer();
@@ -280,6 +422,7 @@ function resetGame() {
     balloons.forEach(b => { if (b.parentNode) b.parentNode.removeChild(b); });
     balloons = [];
     currentLetters.clear();
+    updateKeyboardHighlights();
 
     // Reset counters
     score = 0;
@@ -306,3 +449,7 @@ if (newGameBtn) {
         window.location.href = 'index.html';
     });
 }
+
+buildKeyboardLayer();
+setKeyboardVisibility(keyboardVisible);
+updateKeyboardHighlights();

@@ -60,6 +60,29 @@
       <div id="err" class="error" aria-live="polite">Ensure Min &le; Max within 3&ndash;20.</div>
     </fieldset>
 
+    <fieldset>
+      <legend>Difficulty</legend>
+      <div>
+        <label for="difficulty">Balloon speed</label>
+        <select id="difficulty">
+          <option value="rookie">Rookie (0.5x)</option>
+          <option value="beginner">Beginner (0.75x)</option>
+          <option value="normal" selected>Normal (1x)</option>
+          <option value="advanced">Advanced (1.25x)</option>
+          <option value="pro">Pro (1.5x)</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Keyboard helper</legend>
+      <div class="keyboard-toggle">
+        <label for="keyboard-visibility-toggle">
+          <input type="checkbox" id="keyboard-visibility-toggle" />
+          Show keyboard helper during play
+        </label>
+      </div>
+    </fieldset>
     <div class="actions">
       <button id="start" class="btn btn-primary" type="button">Start Game</button>
     </div>
@@ -89,8 +112,34 @@
     const symbols = document.getElementById('symbols');
     const minEl = document.getElementById('min');
     const maxEl = document.getElementById('max');
+    const difficultyEl = document.getElementById('difficulty');
     const err = document.getElementById('err');
     const startBtn = document.getElementById('start');
+    const keyboardVisibilityToggle = document.getElementById('keyboard-visibility-toggle');
+    const KEYBOARD_VISIBILITY_KEY = 'keyboard-layout-visible';
+
+    function readKeyboardVisibilityPreference() {
+      try {
+        const stored = localStorage.getItem(KEYBOARD_VISIBILITY_KEY);
+        if (stored === '0') return false;
+        if (stored === '1') return true;
+      } catch (error) {
+        // Ignore storage errors.
+      }
+      return true;
+    }
+
+    const keyboardVisibilityPreference = readKeyboardVisibilityPreference();
+    if (keyboardVisibilityToggle) {
+      keyboardVisibilityToggle.checked = keyboardVisibilityPreference;
+      keyboardVisibilityToggle.addEventListener('change', () => {
+        try {
+          localStorage.setItem(KEYBOARD_VISIBILITY_KEY, keyboardVisibilityToggle.checked ? '1' : '0');
+        } catch (error) {
+          // Ignore storage errors.
+        }
+      });
+    }
 
     function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 
@@ -113,6 +162,7 @@
 
     startBtn.addEventListener('click', () => {
       if (!validate()) return;
+      const keyboardVisible = keyboardVisibilityToggle ? keyboardVisibilityToggle.checked : keyboardVisibilityPreference;
       const params = new URLSearchParams({
         lower: 'true',
         upper: String(upper.checked),
@@ -120,6 +170,8 @@
         symbols: String(symbols.checked),
         min: minEl.value,
         max: maxEl.value,
+        difficulty: difficultyEl.value || 'normal',
+        keyboardVisible: keyboardVisible ? '1' : '0',
       });
       window.location.href = `baloons.html?${params.toString()}`;
     });
