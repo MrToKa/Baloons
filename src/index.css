@@ -507,6 +507,12 @@ select:focus {
   color: color-mix(in oklab, #fff, transparent 15%);
 }
 
+.key.spacer {
+  visibility: hidden;
+  pointer-events: none;
+  min-width: 48px;
+}
+
 @media (max-width: 768px) {
   #keyboard-layer {
     padding: 8px;
