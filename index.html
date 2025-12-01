@@ -1,182 +1,34 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Balloon Game &mdash; Setup</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script>
-    (function(){
-      const key = 'theme-preference';
-      const root = document.documentElement;
-      const media = window.matchMedia('(prefers-color-scheme: dark)');
-      const getPref = () => localStorage.getItem(key) || 'auto';
-      const apply = (v) => { const mode = (v==='light'||v==='dark')?v:(media.matches?'dark':'light'); root.classList.toggle('dark', mode==='dark'); };
-      apply(getPref());
-      const sync = () => { if (getPref()==='auto') apply('auto'); };
-      media.addEventListener ? media.addEventListener('change', sync) : media.addListener(sync);
-      window.__applyTheme = v => { localStorage.setItem(key, v); apply(v); };
-      window.__getTheme = getPref;
-    })();
-  </script>
-</head>
-<body>
-  <div class="theme-control" aria-label="Theme selector">
-    <span id="theme-icon" class="theme-icon" aria-hidden="true">🌓</span>
-    <span class="label">Theme</span>
-    <label for="theme-select" class="sr-only">Theme</label>
-    <select id="theme-select" class="theme-select">
-      <option value="auto">Auto</option>
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-    </select>
-  </div>
-
-  <div class="container">
-    <h1 style="margin: 0 0 12px; text-align: center;">Balloon Game &mdash; Setup</h1>
-
-    <fieldset>
-      <legend>Characters</legend>
-      <div>
-        <label><input type="checkbox" id="lower" checked disabled /> Lowercase letters (a&ndash;z) &mdash; mandatory</label><br />
-        <label><input type="checkbox" id="upper" /> Uppercase letters (A&ndash;Z)</label><br />
-        <label><input type="checkbox" id="numbers" /> Numbers (0&ndash;9)</label><br />
-        <label><input type="checkbox" id="symbols" /> Symbols (~ ! @ # $ % ...)</label>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Balloon Count</legend>
-      <div class="row">
-        <div>
-          <label for="min">Min on screen (3&ndash;20)</label>
-          <input id="min" type="number" min="3" max="20" value="3" />
-        </div>
-        <div>
-          <label for="max">Max on screen (3&ndash;20)</label>
-          <input id="max" type="number" min="3" max="20" value="10" />
-        </div>
-      </div>
-      <div id="err" class="error" aria-live="polite">Ensure Min &le; Max within 3&ndash;20.</div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Difficulty</legend>
-      <div>
-        <label for="difficulty">Balloon speed</label>
-        <select id="difficulty">
-          <option value="rookie">Rookie (0.5x)</option>
-          <option value="beginner">Beginner (0.75x)</option>
-          <option value="normal" selected>Normal (1x)</option>
-          <option value="advanced">Advanced (1.25x)</option>
-          <option value="pro">Pro (1.5x)</option>
-        </select>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Keyboard helper</legend>
-      <div class="keyboard-toggle">
-        <label for="keyboard-visibility-toggle">
-          <input type="checkbox" id="keyboard-visibility-toggle" />
-          Show keyboard helper during play
-        </label>
-      </div>
-    </fieldset>
-    <div class="actions">
-      <button id="start" class="btn btn-primary" type="button">Start Game</button>
-    </div>
-  </div>
-
-  <script>
-    // Theme selector binding
-    (function(){
-      const sel = document.getElementById('theme-select');
-      const icon = document.getElementById('theme-icon');
-      const iconFor = v => v==='light' ? '☀️' : v==='dark' ? '🌙' : '🌓';
-      if (sel) {
-        const current = window.__getTheme ? window.__getTheme() : 'auto';
-        sel.value = current;
-        if (icon) icon.textContent = iconFor(current);
-        sel.addEventListener('change', () => {
-          if (window.__applyTheme) window.__applyTheme(sel.value);
-          if (icon) icon.textContent = iconFor(sel.value);
-        });
-      }
-    })();
-
-    // Setup page logic
-    const lower = document.getElementById('lower');
-    const upper = document.getElementById('upper');
-    const numbers = document.getElementById('numbers');
-    const symbols = document.getElementById('symbols');
-    const minEl = document.getElementById('min');
-    const maxEl = document.getElementById('max');
-    const difficultyEl = document.getElementById('difficulty');
-    const err = document.getElementById('err');
-    const startBtn = document.getElementById('start');
-    const keyboardVisibilityToggle = document.getElementById('keyboard-visibility-toggle');
-    const KEYBOARD_VISIBILITY_KEY = 'keyboard-layout-visible';
-
-    function readKeyboardVisibilityPreference() {
-      try {
-        const stored = localStorage.getItem(KEYBOARD_VISIBILITY_KEY);
-        if (stored === '0') return false;
-        if (stored === '1') return true;
-      } catch (error) {
-        // Ignore storage errors.
-      }
-      return true;
-    }
-
-    const keyboardVisibilityPreference = readKeyboardVisibilityPreference();
-    if (keyboardVisibilityToggle) {
-      keyboardVisibilityToggle.checked = keyboardVisibilityPreference;
-      keyboardVisibilityToggle.addEventListener('change', () => {
-        try {
-          localStorage.setItem(KEYBOARD_VISIBILITY_KEY, keyboardVisibilityToggle.checked ? '1' : '0');
-        } catch (error) {
-          // Ignore storage errors.
-        }
-      });
-    }
-
-    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
-
-    function validate() {
-      let min = parseInt(minEl.value, 10);
-      let max = parseInt(maxEl.value, 10);
-      min = clamp(isNaN(min) ? 3 : min, 3, 20);
-      max = clamp(isNaN(max) ? 10 : max, 3, 20);
-      minEl.value = String(min);
-      maxEl.value = String(max);
-      const ok = min <= max;
-      err.style.display = ok ? 'none' : 'block';
-      startBtn.disabled = !ok;
-      return ok;
-    }
-
-    minEl.addEventListener('input', validate);
-    maxEl.addEventListener('input', validate);
-    [lower, upper, numbers, symbols].forEach(cb => cb.addEventListener('change', validate));
-
-    startBtn.addEventListener('click', () => {
-      if (!validate()) return;
-      const keyboardVisible = keyboardVisibilityToggle ? keyboardVisibilityToggle.checked : keyboardVisibilityPreference;
-      const params = new URLSearchParams({
-        lower: 'true',
-        upper: String(upper.checked),
-        numbers: String(numbers.checked),
-        symbols: String(symbols.checked),
-        min: minEl.value,
-        max: maxEl.value,
-        difficulty: difficultyEl.value || 'normal',
-        keyboardVisible: keyboardVisible ? '1' : '0',
-      });
-      window.location.href = `baloons.html?${params.toString()}`;
-    });
-
-    validate();
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Balloon Game</title>
+    <script>
+      (() => {
+        const key = 'theme-preference';
+        const root = document.documentElement;
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const getPref = () => localStorage.getItem(key) || 'auto';
+        const apply = (pref) => {
+          const mode =
+            pref === 'light' || pref === 'dark'
+              ? pref
+              : media.matches
+              ? 'dark'
+              : 'light';
+          root.classList.toggle('dark', mode === 'dark');
+        };
+        apply(getPref());
+        const sync = () => {
+          if (getPref() === 'auto') apply('auto');
+        };
+        media.addEventListener ? media.addEventListener('change', sync) : media.addListener(sync);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
