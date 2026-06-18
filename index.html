@@ -2,21 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Balloon Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Balloon Game - Setup</title>
+    <link rel="stylesheet" href="styles.css" />
     <script>
-      (() => {
+      (function () {
         const key = 'theme-preference';
         const root = document.documentElement;
         const media = window.matchMedia('(prefers-color-scheme: dark)');
         const getPref = () => localStorage.getItem(key) || 'auto';
-        const apply = (pref) => {
+        const apply = (value) => {
           const mode =
-            pref === 'light' || pref === 'dark'
-              ? pref
-              : media.matches
-              ? 'dark'
-              : 'light';
+            value === 'light' || value === 'dark' ? value : media.matches ? 'dark' : 'light';
           root.classList.toggle('dark', mode === 'dark');
         };
         apply(getPref());
@@ -24,11 +21,220 @@
           if (getPref() === 'auto') apply('auto');
         };
         media.addEventListener ? media.addEventListener('change', sync) : media.addListener(sync);
+        window.__applyTheme = (value) => {
+          localStorage.setItem(key, value);
+          apply(value);
+        };
+        window.__getTheme = getPref;
       })();
     </script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="theme-control" aria-label="Theme selector">
+      <span id="theme-icon" class="theme-icon" aria-hidden="true">A</span>
+      <span class="label">Theme</span>
+      <label for="theme-select" class="sr-only">Theme</label>
+      <select id="theme-select" class="theme-select">
+        <option value="auto">Auto</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+
+    <form id="setup-form" class="container">
+      <h1 style="margin: 0 0 12px; text-align: center">Balloon Game - Setup</h1>
+
+      <fieldset>
+        <legend>Characters</legend>
+        <div>
+          <label>
+            <input type="checkbox" checked disabled />
+            Lowercase letters (a-z) - mandatory
+          </label>
+          <br />
+          <label>
+            <input id="upper" type="checkbox" />
+            Uppercase letters (A-Z)
+          </label>
+          <br />
+          <label>
+            <input id="numbers" type="checkbox" />
+            Numbers (0-9)
+          </label>
+          <br />
+          <label>
+            <input id="symbols" type="checkbox" />
+            Symbols (~ ! @ # $ % ...)
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Balloon Count</legend>
+        <div class="row">
+          <div>
+            <label for="min">Min on screen (3-20)</label>
+            <input id="min" type="number" min="3" max="20" value="3" />
+          </div>
+          <div>
+            <label for="max">Max on screen (3-20)</label>
+            <input id="max" type="number" min="3" max="20" value="10" />
+          </div>
+        </div>
+        <div id="range-error" class="error" aria-live="polite">
+          Ensure Min is less than or equal to Max within 3-20.
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Difficulty</legend>
+        <div>
+          <label for="difficulty">Balloon speed</label>
+          <select id="difficulty">
+            <option value="rookie">Rookie (0.5x)</option>
+            <option value="beginner">Beginner (0.75x)</option>
+            <option value="normal" selected>Normal (1x)</option>
+            <option value="advanced">Advanced (1.25x)</option>
+            <option value="pro">Pro (1.5x)</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Play helper</legend>
+        <div class="keyboard-toggle">
+          <label for="helper-enabled">
+            <input id="helper-enabled" type="checkbox" checked />
+            Enable play helper
+          </label>
+        </div>
+        <div>
+          <label for="helper-mode">Show during play</label>
+          <select id="helper-mode">
+            <option value="keyboard" selected>Keyboard helper</option>
+            <option value="fingers">Fingers helper</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button id="start-game" class="btn btn-primary" type="submit">Start Game</button>
+      </div>
+    </form>
+
+    <script>
+      (function () {
+        const themeSelect = document.getElementById('theme-select');
+        const themeIcon = document.getElementById('theme-icon');
+        const iconFor = (value) => (value === 'light' ? 'L' : value === 'dark' ? 'D' : 'A');
+
+        if (themeSelect) {
+          const current = window.__getTheme ? window.__getTheme() : 'auto';
+          themeSelect.value = current;
+          if (themeIcon) themeIcon.textContent = iconFor(current);
+          themeSelect.addEventListener('change', () => {
+            if (window.__applyTheme) window.__applyTheme(themeSelect.value);
+            if (themeIcon) themeIcon.textContent = iconFor(themeSelect.value);
+          });
+        }
+      })();
+
+      (function () {
+        const form = document.getElementById('setup-form');
+        const upper = document.getElementById('upper');
+        const numbers = document.getElementById('numbers');
+        const symbols = document.getElementById('symbols');
+        const minInput = document.getElementById('min');
+        const maxInput = document.getElementById('max');
+        const difficulty = document.getElementById('difficulty');
+        const helperEnabled = document.getElementById('helper-enabled');
+        const helperMode = document.getElementById('helper-mode');
+        const error = document.getElementById('range-error');
+        const startButton = document.getElementById('start-game');
+        const helperEnabledKey = 'play-helper-enabled';
+        const helperKey = 'play-helper-mode';
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const numberValue = (input, fallback) => {
+          const parsed = parseInt(input.value, 10);
+          return Number.isNaN(parsed) ? fallback : parsed;
+        };
+
+        try {
+          const helperEnabledStored = localStorage.getItem(helperEnabledKey);
+          if (helperEnabledStored === '0') helperEnabled.checked = false;
+          if (helperEnabledStored === '1') helperEnabled.checked = true;
+
+          const stored = localStorage.getItem(helperKey);
+          if (stored === 'keyboard' || stored === 'fingers') {
+            helperMode.value = stored;
+          }
+        } catch {
+          // Ignore storage failures.
+        }
+
+        const validate = () => {
+          const min = clamp(numberValue(minInput, 3), 3, 20);
+          const max = clamp(numberValue(maxInput, 10), 3, 20);
+          const ok = min <= max;
+          error.style.display = ok ? 'none' : 'block';
+          startButton.disabled = !ok;
+          return { min, max, ok };
+        };
+
+        const syncHelperControls = () => {
+          helperMode.disabled = !helperEnabled.checked;
+        };
+
+        minInput.addEventListener('blur', () => {
+          minInput.value = String(validate().min);
+        });
+        maxInput.addEventListener('blur', () => {
+          maxInput.value = String(validate().max);
+        });
+        minInput.addEventListener('input', validate);
+        maxInput.addEventListener('input', validate);
+        helperEnabled.addEventListener('change', () => {
+          syncHelperControls();
+          try {
+            localStorage.setItem(helperEnabledKey, helperEnabled.checked ? '1' : '0');
+          } catch {
+            // Ignore storage failures.
+          }
+        });
+        helperMode.addEventListener('change', () => {
+          try {
+            localStorage.setItem(helperKey, helperMode.value);
+          } catch {
+            // Ignore storage failures.
+          }
+        });
+
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const values = validate();
+          if (!values.ok) return;
+
+          const params = new URLSearchParams({
+            upper: upper.checked ? 'true' : 'false',
+            numbers: numbers.checked ? 'true' : 'false',
+            symbols: symbols.checked ? 'true' : 'false',
+            min: String(values.min),
+            max: String(values.max),
+            difficulty: difficulty.value,
+            helperMode: helperEnabled.checked
+              ? helperMode.value === 'fingers'
+                ? 'fingers'
+                : 'keyboard'
+              : 'none',
+          });
+
+          window.location.href = `baloons.html?${params.toString()}`;
+        });
+
+        validate();
+        syncHelperControls();
+      })();
+    </script>
   </body>
 </html>

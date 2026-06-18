@@ -224,7 +224,8 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
   font-size: clamp(3rem, 14vw, 9rem); padding: 0 24px; text-align: center;
 }
 
-#keyboard-layer {
+#keyboard-layer,
+#fingers-layer {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: color-mix(in oklab, var(--card), var(--bg-accent) 15%);
@@ -239,6 +240,149 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
   overflow-y: visible;
   height: auto;
   min-height: 0;
+}
+
+#fingers-layer {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+}
+
+.hand-helper {
+  flex: 1 1 0;
+  min-width: 260px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hand-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.finger-set {
+  min-height: 134px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+}
+
+.finger {
+  position: relative;
+  width: 54px;
+  height: 108px;
+  border: 1px solid var(--border);
+  border-radius: 999px 999px 18px 18px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--card), #ffffff 8%),
+    color-mix(in oklab, var(--card), var(--bg-accent) 34%)
+  );
+  color: var(--text);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--text), transparent 90%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 10px 5px;
+  text-align: center;
+  transition: transform 120ms ease, box-shadow 140ms ease, border-color 160ms ease, background 140ms ease;
+  user-select: none;
+}
+
+.finger::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--text), transparent 88%);
+  transform: translateX(-50%);
+}
+
+.finger.pinky { height: 88px; }
+.finger.ring { height: 108px; }
+.finger.middle { height: 124px; }
+.finger.index { height: 116px; }
+
+.finger.thumb {
+  width: 68px;
+  height: 64px;
+  border-radius: 34px 34px 22px 22px;
+}
+
+.left-thumb {
+  margin-left: 4px;
+  transform: rotate(12deg);
+}
+
+.right-thumb {
+  margin-right: 4px;
+  transform: rotate(-12deg);
+}
+
+.finger-name {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.finger-keys {
+  min-width: 28px;
+  min-height: 18px;
+  border-radius: 999px;
+  padding: 2px 5px;
+  color: var(--muted);
+  background: color-mix(in oklab, var(--card), var(--bg-accent) 45%);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.finger.active {
+  color: #fff;
+  border-color: #0f766e;
+  background: linear-gradient(180deg, #14b8a6, #0f766e);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.24), var(--shadow);
+  transform: translateY(-4px);
+}
+
+.left-thumb.active {
+  transform: translateY(-4px) rotate(12deg);
+}
+
+.right-thumb.active {
+  transform: translateY(-4px) rotate(-12deg);
+}
+
+.finger.active::before {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.finger.active .finger-keys {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.palm {
+  width: min(88%, 280px);
+  height: 42px;
+  margin-top: -4px;
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 28px 28px;
+  background: color-mix(in oklab, var(--card), var(--bg-accent) 28%);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--text), transparent 90%);
 }
 
 .keyboard-row {
@@ -299,13 +443,44 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
 }
 
 @media (max-width: 768px) {
-  #keyboard-layer {
+  #keyboard-layer,
+  #fingers-layer {
     padding: 8px;
     gap: 4px;
     min-height: 0;
     height: auto;
     max-height: none;
   }
+
+  #fingers-layer {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .hand-helper {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .finger-set {
+    min-height: 112px;
+    gap: 5px;
+  }
+
+  .finger {
+    width: 44px;
+    height: 92px;
+    padding: 8px 4px;
+  }
+
+  .finger.pinky { height: 76px; }
+  .finger.ring { height: 90px; }
+  .finger.middle { height: 104px; }
+  .finger.index { height: 98px; }
+  .finger.thumb { width: 56px; height: 54px; }
+  .finger-name { font-size: 9px; }
+  .finger-keys { font-size: 9px; min-width: 24px; }
+
   .keyboard-row { gap: 4px; width: auto; }
   .key { min-width: 26px; height: 30px; font-size: 10px; }
   .key.space { min-width: 120px; }

@@ -8,6 +8,7 @@ const difficultyDisplay = document.getElementById('difficulty');
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownText = document.getElementById('countdown-text');
 const keyboardLayer = document.getElementById('keyboard-layer');
+const fingersLayer = document.getElementById('fingers-layer');
 let score = 0;
 let correctPops = 0;
 let mistakes = 0;
@@ -23,8 +24,14 @@ let gameLoopHandle = null;
 // Read options from URL params
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 const params = new URLSearchParams(window.location.search);
+const helperModeParam = params.get('helperMode');
 const keyboardVisibleParam = params.get('keyboardVisible');
-const keyboardVisible = keyboardVisibleParam !== '0';
+const helperMode =
+    helperModeParam === 'fingers' || helperModeParam === 'keyboard' || helperModeParam === 'none'
+        ? helperModeParam
+        : keyboardVisibleParam === '0'
+            ? 'none'
+            : 'keyboard';
 const DIFFICULTY_LEVELS = {
   rookie: { multiplier: 0.5, label: 'Rookie' },
   beginner: { multiplier: 0.75, label: 'Beginner' },
@@ -60,7 +67,7 @@ const CHARS = {
 const KEYBOARD_LAYOUT = [
   [
     { main: '`', alt: '~', hand: 'left' }, { main: '1', alt: '!', hand: 'left' }, { main: '2', alt: '@', hand: 'left' }, { main: '3', alt: '#', hand: 'left' }, { main: '4', alt: '$', hand: 'left' },
-    { main: '5', alt: '%', hand: 'left' }, { main: '6', alt: '^', hand: 'left' }, { main: '7', alt: '&', hand: 'right' }, { main: '8', alt: '*', hand: 'right' }, { main: '9', alt: '(', hand: 'right' },
+    { main: '5', alt: '%', hand: 'left' }, { main: '6', alt: '^', hand: 'right' }, { main: '7', alt: '&', hand: 'right' }, { main: '8', alt: '*', hand: 'right' }, { main: '9', alt: '(', hand: 'right' },
     { main: '0', alt: ')', hand: 'right' }, { main: '-', alt: '_', hand: 'right' }, { main: '=', alt: '+', hand: 'right' }
   ],
   [
@@ -79,6 +86,42 @@ const KEYBOARD_LAYOUT = [
   ],
 ];
 const FLAT_KEYS = KEYBOARD_LAYOUT.flat();
+
+const FINGERS = [
+    { id: 'left-pinky', hand: 'left', label: 'Pinky', className: 'pinky' },
+    { id: 'left-ring', hand: 'left', label: 'Ring', className: 'ring' },
+    { id: 'left-middle', hand: 'left', label: 'Middle', className: 'middle' },
+    { id: 'left-index', hand: 'left', label: 'Index', className: 'index' },
+    { id: 'left-thumb', hand: 'left', label: 'Thumb', className: 'thumb' },
+    { id: 'right-thumb', hand: 'right', label: 'Thumb', className: 'thumb' },
+    { id: 'right-index', hand: 'right', label: 'Index', className: 'index' },
+    { id: 'right-middle', hand: 'right', label: 'Middle', className: 'middle' },
+    { id: 'right-ring', hand: 'right', label: 'Ring', className: 'ring' },
+    { id: 'right-pinky', hand: 'right', label: 'Pinky', className: 'pinky' },
+];
+
+const FINGER_ORDER = {
+    left: ['left-pinky', 'left-ring', 'left-middle', 'left-index', 'left-thumb'],
+    right: ['right-thumb', 'right-index', 'right-middle', 'right-ring', 'right-pinky'],
+};
+
+const KEY_TO_FINGER = new Map();
+
+function mapFinger(fingerId, chars) {
+    chars.forEach(ch => {
+        KEY_TO_FINGER.set(ch, fingerId);
+        KEY_TO_FINGER.set(ch.toLowerCase(), fingerId);
+    });
+}
+
+mapFinger('left-pinky', ['`', '~', '1', '!', 'q', 'a', 'z']);
+mapFinger('left-ring', ['2', '@', 'w', 's', 'x']);
+mapFinger('left-middle', ['3', '#', 'e', 'd', 'c']);
+mapFinger('left-index', ['4', '$', '5', '%', 'r', 't', 'f', 'g', 'v', 'b']);
+mapFinger('right-index', ['6', '^', '7', '&', 'y', 'u', 'h', 'j', 'n', 'm']);
+mapFinger('right-middle', ['8', '*', 'i', 'k', ',', '<']);
+mapFinger('right-ring', ['9', '(', 'o', 'l', '.', '>']);
+mapFinger('right-pinky', ['0', ')', '-', '_', '=', '+', 'p', '[', '{', ']', '}', '\\', '|', ';', ':', "'", '"', '/', '?']);
 
 // Weighted selection: lowercase baseline 1.0; others 0.1 each if enabled
 function pickWeightedType() {
@@ -156,6 +199,51 @@ function buildKeyboardLayer() {
     });
 }
 
+function buildFingersLayer() {
+    if (!fingersLayer) return;
+    fingersLayer.innerHTML = '';
+
+    ['left', 'right'].forEach(side => {
+        const handEl = document.createElement('div');
+        handEl.className = `hand-helper ${side}-hand`;
+
+        const label = document.createElement('div');
+        label.className = 'hand-label';
+        label.textContent = side === 'left' ? 'Left hand' : 'Right hand';
+
+        const fingerSet = document.createElement('div');
+        fingerSet.className = 'finger-set';
+
+        FINGER_ORDER[side].forEach(fingerId => {
+            const finger = FINGERS.find(item => item.id === fingerId);
+            if (!finger) return;
+
+            const fingerEl = document.createElement('div');
+            fingerEl.className = `finger ${finger.className} ${finger.id}`;
+            fingerEl.dataset.fingerId = finger.id;
+
+            const fingerName = document.createElement('span');
+            fingerName.className = 'finger-name';
+            fingerName.textContent = finger.label;
+
+            const fingerKeys = document.createElement('span');
+            fingerKeys.className = 'finger-keys';
+
+            fingerEl.appendChild(fingerName);
+            fingerEl.appendChild(fingerKeys);
+            fingerSet.appendChild(fingerEl);
+        });
+
+        const palm = document.createElement('div');
+        palm.className = 'palm';
+
+        handEl.appendChild(label);
+        handEl.appendChild(fingerSet);
+        handEl.appendChild(palm);
+        fingersLayer.appendChild(handEl);
+    });
+}
+
 function isUpperAlpha(ch) {
     return /^[A-Z]$/.test(ch);
 }
@@ -176,6 +264,39 @@ function keyInfoForChar(ch) {
         }
     }
     return null;
+}
+
+function addFingerChar(activeFingers, fingerId, label) {
+    if (!fingerId) return;
+    if (!activeFingers.has(fingerId)) activeFingers.set(fingerId, new Set());
+    activeFingers.get(fingerId).add(label);
+}
+
+function fingerForChar(ch) {
+    if (!ch) return null;
+    return KEY_TO_FINGER.get(ch) || KEY_TO_FINGER.get(ch.toLowerCase()) || null;
+}
+
+function collectActiveFingerState() {
+    const activeFingers = new Map();
+
+    balloons.forEach(b => {
+        const ch = (b.textContent || '').trim();
+        if (!ch) return;
+
+        addFingerChar(activeFingers, fingerForChar(ch), ch);
+
+        const info = keyInfoForChar(ch);
+        if (info && info.requiresShift) {
+            if (info.key.hand === 'right') {
+                addFingerChar(activeFingers, 'left-pinky', 'Shift');
+            } else if (info.key.hand === 'left') {
+                addFingerChar(activeFingers, 'right-pinky', 'Shift');
+            }
+        }
+    });
+
+    return activeFingers;
 }
 
 function updateKeyboardHighlights() {
@@ -218,9 +339,40 @@ function updateKeyboardHighlights() {
     });
 }
 
+function updateFingersHighlights() {
+    if (!fingersLayer) return;
+    const activeFingers = collectActiveFingerState();
+    const fingerEls = fingersLayer.querySelectorAll('.finger');
+
+    fingerEls.forEach(el => {
+        const fingerId = el.dataset.fingerId;
+        const activeChars = activeFingers.get(fingerId);
+        const isActive = Boolean(activeChars && activeChars.size);
+        const keysEl = el.querySelector('.finger-keys');
+
+        el.classList.toggle('active', isActive);
+        if (keysEl) keysEl.textContent = isActive ? Array.from(activeChars).join(' ') : '';
+    });
+}
+
+function updateHelperHighlights() {
+    updateKeyboardHighlights();
+    updateFingersHighlights();
+}
+
 function setKeyboardVisibility(show) {
     if (!keyboardLayer) return;
     keyboardLayer.classList.toggle('hidden', !show);
+}
+
+function setFingersVisibility(show) {
+    if (!fingersLayer) return;
+    fingersLayer.classList.toggle('hidden', !show);
+}
+
+function setHelperVisibility(mode) {
+    setKeyboardVisibility(mode === 'keyboard');
+    setFingersVisibility(mode === 'fingers');
 }
 
 // Function to create a balloon
@@ -239,7 +391,7 @@ function createBalloon() {
     balloons.push(balloon);
     gameArea.appendChild(balloon);
     animateBalloon(balloon);
-    updateKeyboardHighlights();
+    updateHelperHighlights();
 }
 
 // Function to set balloon color based on speed
@@ -277,7 +429,7 @@ function animateBalloon(balloon) {
             mistakes += 1;  // Increment the missed counter
             scoreDisplay.textContent = `Score: ${score}`;
             mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
-            updateKeyboardHighlights();
+            updateHelperHighlights();
         } else {
             position += speed;
             balloon.style.bottom = `${position}px`;
@@ -315,7 +467,7 @@ function handleKeyPress(event) {
     scoreDisplay.textContent = `Score: ${score}`;
     correctPopsDisplay.textContent = `Correct Pops: ${correctPops}`;  // Update correct pops counter
     mistakesDisplay.textContent = `Mistakes/Missed: ${mistakes}`;  // Update mistakes counter
-    updateKeyboardHighlights();
+    updateHelperHighlights();
 }
 
 // Set up the game timer that counts elapsed time in mm:ss format
@@ -422,7 +574,7 @@ function resetGame() {
     balloons.forEach(b => { if (b.parentNode) b.parentNode.removeChild(b); });
     balloons = [];
     currentLetters.clear();
-    updateKeyboardHighlights();
+    updateHelperHighlights();
 
     // Reset counters
     score = 0;
@@ -451,5 +603,6 @@ if (newGameBtn) {
 }
 
 buildKeyboardLayer();
-setKeyboardVisibility(keyboardVisible);
-updateKeyboardHighlights();
+buildFingersLayer();
+setHelperVisibility(helperMode);
+updateHelperHighlights();
