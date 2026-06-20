@@ -67,20 +67,20 @@ const CHARS = {
 const KEYBOARD_LAYOUT = [
   [
     { main: '`', alt: '~', hand: 'left' }, { main: '1', alt: '!', hand: 'left' }, { main: '2', alt: '@', hand: 'left' }, { main: '3', alt: '#', hand: 'left' }, { main: '4', alt: '$', hand: 'left' },
-    { main: '5', alt: '%', hand: 'left' }, { main: '6', alt: '^', hand: 'right' }, { main: '7', alt: '&', hand: 'right' }, { main: '8', alt: '*', hand: 'right' }, { main: '9', alt: '(', hand: 'right' },
+    { main: '5', alt: '%', hand: 'left' }, { main: '6', alt: '^', hand: 'left' }, { main: '', value: 'spacer-top', className: 'spacer' }, { main: '7', alt: '&', hand: 'right' }, { main: '8', alt: '*', hand: 'right' }, { main: '9', alt: '(', hand: 'right' },
     { main: '0', alt: ')', hand: 'right' }, { main: '-', alt: '_', hand: 'right' }, { main: '=', alt: '+', hand: 'right' }
   ],
   [
-    { main: 'Q', hand: 'left' }, { main: 'W', hand: 'left' }, { main: 'E', hand: 'left' }, { main: 'R', hand: 'left' }, { main: 'T', hand: 'left' }, { main: 'Y', hand: 'right' }, { main: 'U', hand: 'right' }, { main: 'I', hand: 'right' }, { main: 'O', hand: 'right' }, { main: 'P', hand: 'right' },
+    { main: 'Q', hand: 'left' }, { main: 'W', hand: 'left' }, { main: 'E', hand: 'left' }, { main: 'R', hand: 'left' }, { main: 'T', hand: 'left' }, { main: '', value: 'spacer-upper', className: 'spacer' }, { main: 'Y', hand: 'right' }, { main: 'U', hand: 'right' }, { main: 'I', hand: 'right' }, { main: 'O', hand: 'right' }, { main: 'P', hand: 'right' },
     { main: '[', alt: '{', hand: 'right' }, { main: ']', alt: '}', hand: 'right' }, { main: '\\', alt: '|', hand: 'right' }
   ],
   [
-    { main: 'A', hand: 'left' }, { main: 'S', hand: 'left' }, { main: 'D', hand: 'left' }, { main: 'F', hand: 'left' }, { main: 'G', hand: 'left' }, { main: 'H', hand: 'right' }, { main: 'J', hand: 'right' }, { main: 'K', hand: 'right' }, { main: 'L', hand: 'right' },
+    { main: 'A', hand: 'left' }, { main: 'S', hand: 'left' }, { main: 'D', hand: 'left' }, { main: 'F', hand: 'left' }, { main: 'G', hand: 'left' }, { main: '', value: 'spacer-home', className: 'spacer' }, { main: 'H', hand: 'right' }, { main: 'J', hand: 'right' }, { main: 'K', hand: 'right' }, { main: 'L', hand: 'right' },
     { main: ';', alt: ':', hand: 'right' }, { main: '\'', alt: '"', hand: 'right' }
   ],
   [
     { main: 'Shift', value: 'shift-left', className: 'shift shift-left', hand: 'leftShift' },
-    { main: 'Z', hand: 'left' }, { main: 'X', hand: 'left' }, { main: 'C', hand: 'left' }, { main: 'V', hand: 'left' }, { main: 'B', hand: 'left' }, { main: 'N', hand: 'right' }, { main: 'M', hand: 'right' },
+    { main: 'Z', hand: 'left' }, { main: 'X', hand: 'left' }, { main: 'C', hand: 'left' }, { main: 'V', hand: 'left' }, { main: 'B', hand: 'left' }, { main: '', value: 'spacer-bottom', className: 'spacer' }, { main: 'N', hand: 'right' }, { main: 'M', hand: 'right' },
     { main: ',', alt: '<', hand: 'right' }, { main: '.', alt: '>', hand: 'right' }, { main: '/', alt: '?', hand: 'right' },
     { main: 'Shift', value: 'shift-right', className: 'shift shift-right', hand: 'rightShift' }
   ],
@@ -117,8 +117,8 @@ function mapFinger(fingerId, chars) {
 mapFinger('left-pinky', ['`', '~', '1', '!', 'q', 'a', 'z']);
 mapFinger('left-ring', ['2', '@', 'w', 's', 'x']);
 mapFinger('left-middle', ['3', '#', 'e', 'd', 'c']);
-mapFinger('left-index', ['4', '$', '5', '%', 'r', 't', 'f', 'g', 'v', 'b']);
-mapFinger('right-index', ['6', '^', '7', '&', 'y', 'u', 'h', 'j', 'n', 'm']);
+mapFinger('left-index', ['4', '$', '5', '%', '6', '^', 'r', 't', 'f', 'g', 'v', 'b']);
+mapFinger('right-index', ['7', '&', 'y', 'u', 'h', 'j', 'n', 'm']);
 mapFinger('right-middle', ['8', '*', 'i', 'k', ',', '<']);
 mapFinger('right-ring', ['9', '(', 'o', 'l', '.', '>']);
 mapFinger('right-pinky', ['0', ')', '-', '_', '=', '+', 'p', '[', '{', ']', '}', '\\', '|', ';', ':', "'", '"', '/', '?']);
