@@ -428,7 +428,8 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
 
 .key.wide { min-width: 64px; }
 .key.space { flex: 1 1 220px; min-width: 160px; justify-content: center; }
-.key.shift { min-width: 48px; height: 36px; justify-content: center; font-weight: 700; }
+.key.shift,
+.key.caps { min-width: 48px; height: 36px; justify-content: center; font-weight: 700; }
 
 .key.active {
   background: linear-gradient(180deg, var(--primary), var(--primary-600));
@@ -484,5 +485,6 @@ input[type="number"]:focus, input[type="text"]:focus, select:focus {
   .keyboard-row { gap: 4px; width: auto; }
   .key { min-width: 26px; height: 30px; font-size: 10px; }
   .key.space { min-width: 120px; }
-  .key.shift { min-width: 42px; height: 34px; }
+  .key.shift,
+  .key.caps { min-width: 42px; height: 34px; }
 }

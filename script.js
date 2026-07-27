@@ -100,8 +100,8 @@ const CHARACTER_TYPE_WEIGHTS = [
   ...(opt.symbols ? [{ key: "symbols", weight: 0.1 }] : []),
 ];
 
-// Keyboard helper layout with hand mapping for shift guidance
-const KEYBOARD_LAYOUT = [
+// Keyboard helper layouts with physical-key hand mapping for modifier guidance.
+const ENGLISH_KEYBOARD_LAYOUT = [
   [
     { main: "`", alt: "~", hand: "left" },
     { main: "1", alt: "!", hand: "left" },
@@ -174,6 +174,93 @@ const KEYBOARD_LAYOUT = [
     },
   ],
 ];
+const BULGARIAN_TRADITIONAL_KEYBOARD_LAYOUT = [
+  [
+    { main: "Ч", hand: "left" },
+    { main: "1", alt: "!", hand: "left" },
+    { main: "2", alt: "@", hand: "left" },
+    { main: "3", alt: "№", hand: "left" },
+    { main: "4", alt: "$", hand: "left" },
+    { main: "5", alt: "%", hand: "left" },
+    { main: "6", alt: "€", hand: "left" },
+    { main: "", value: "spacer-top", className: "spacer" },
+    { main: "7", alt: "§", hand: "right" },
+    { main: "8", alt: "*", hand: "right" },
+    { main: "9", alt: "(", hand: "right" },
+    { main: "0", alt: ")", hand: "right" },
+    { main: "-", alt: "_", hand: "right" },
+    { main: "=", alt: "+", hand: "right" },
+  ],
+  [
+    { main: "Я", hand: "left" },
+    { main: "В", hand: "left" },
+    { main: "Е", hand: "left" },
+    { main: "Р", hand: "left" },
+    { main: "Т", hand: "left" },
+    { main: "", value: "spacer-upper", className: "spacer" },
+    { main: "Ъ", hand: "right" },
+    { main: "У", hand: "right" },
+    { main: "И", hand: "right" },
+    { main: "О", hand: "right" },
+    { main: "П", hand: "right" },
+    { main: "Ш", hand: "right" },
+    { main: "Щ", hand: "right" },
+    { main: "Ю", hand: "right" },
+  ],
+  [
+    {
+      main: "Caps",
+      value: "caps-lock",
+      className: "caps",
+      hand: "left",
+    },
+    { main: "А", hand: "left" },
+    { main: "С", hand: "left" },
+    { main: "Д", hand: "left" },
+    { main: "Ф", hand: "left" },
+    { main: "Г", hand: "left" },
+    { main: "", value: "spacer-home", className: "spacer" },
+    { main: "Х", hand: "right" },
+    { main: "Й", hand: "right" },
+    { main: "К", hand: "right" },
+    { main: "Л", hand: "right" },
+    { main: ";", alt: ":", hand: "right" },
+    { main: "'", alt: '"', hand: "right" },
+  ],
+  [
+    {
+      main: "Shift",
+      value: "shift-left",
+      className: "shift shift-left",
+      hand: "leftShift",
+    },
+    { main: "З", hand: "left" },
+    {
+      main: "Ь",
+      hand: "left",
+      uppercaseModifier: "caps",
+    },
+    { main: "Ц", hand: "left" },
+    { main: "Ж", hand: "left" },
+    { main: "Б", hand: "left" },
+    { main: "", value: "spacer-bottom", className: "spacer" },
+    { main: "Н", hand: "right" },
+    { main: "М", hand: "right" },
+    { main: ",", alt: "<", hand: "right" },
+    { main: ".", alt: ">", hand: "right" },
+    { main: "/", alt: "?", hand: "right" },
+    {
+      main: "Shift",
+      value: "shift-right",
+      className: "shift shift-right",
+      hand: "rightShift",
+    },
+  ],
+];
+const KEYBOARD_LAYOUT =
+  opt.language === "bulgarian"
+    ? BULGARIAN_TRADITIONAL_KEYBOARD_LAYOUT
+    : ENGLISH_KEYBOARD_LAYOUT;
 const FLAT_KEYS = KEYBOARD_LAYOUT.flat();
 
 const FINGERS = [
@@ -249,6 +336,17 @@ mapFinger("right-pinky", [
   "/",
   "?",
 ]);
+
+if (opt.language === "bulgarian") {
+  mapFinger("left-pinky", ["ч", "я", "а", "з"]);
+  mapFinger("left-ring", ["в", "с", "ь"]);
+  mapFinger("left-middle", ["е", "д", "ц"]);
+  mapFinger("left-index", ["р", "т", "ф", "г", "ж", "б"]);
+  mapFinger("right-index", ["ъ", "у", "х", "й", "н", "м"]);
+  mapFinger("right-middle", ["и", "к"]);
+  mapFinger("right-ring", ["о", "л"]);
+  mapFinger("right-pinky", ["п", "ш", "щ", "ю"]);
+}
 
 function pickWeightedType() {
   const candidates = CHARACTER_TYPE_WEIGHTS.map((type) => {
@@ -375,10 +473,17 @@ function keyInfoForChar(ch) {
     const altLower = key.alt ? key.alt.toLowerCase() : null;
 
     if (mainLower === lower) {
-      return { key, requiresShift: isUpperAlpha(ch) };
+      const modifier = isUpperAlpha(ch)
+        ? key.uppercaseModifier || "shift"
+        : "none";
+      return {
+        key,
+        requiresShift: modifier === "shift",
+        requiresCapsLock: modifier === "caps",
+      };
     }
     if (altLower && altLower === lower) {
-      return { key, requiresShift: true };
+      return { key, requiresShift: true, requiresCapsLock: false };
     }
   }
   return null;
@@ -411,6 +516,8 @@ function collectActiveFingerState() {
       } else if (info.key.hand === "left") {
         addFingerChar(activeFingers, "right-pinky", "Shift");
       }
+    } else if (info && info.requiresCapsLock) {
+      addFingerChar(activeFingers, "left-pinky", "Caps");
     }
   });
 
@@ -422,6 +529,7 @@ function updateKeyboardHighlights() {
   const active = new Set();
   let leftShiftNeeded = false;
   let rightShiftNeeded = false;
+  let capsLockNeeded = false;
   balloons.forEach((b) => {
     const ch = (b.textContent || "").trim();
     if (!ch) return;
@@ -433,6 +541,8 @@ function updateKeyboardHighlights() {
       } else if (info.key.hand === "left") {
         rightShiftNeeded = true;
       }
+    } else if (info && info.requiresCapsLock) {
+      capsLockNeeded = true;
     }
   });
   const keyEls = keyboardLayer.querySelectorAll(".key");
@@ -451,6 +561,9 @@ function updateKeyboardHighlights() {
     }
     if (keyValue === "shift-right") {
       isActive = isActive || rightShiftNeeded;
+    }
+    if (keyValue === "caps-lock") {
+      isActive = isActive || capsLockNeeded;
     }
     el.classList.toggle("active", isActive);
   });
