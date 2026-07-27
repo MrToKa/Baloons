@@ -47,7 +47,12 @@ const DIFFICULTY_LEVELS = {
   advanced: { multiplier: 1.25, label: "Advanced" },
   pro: { multiplier: 1.5, label: "Pro" },
 };
+const requestedLanguage = params.get("language");
 const opt = {
+  language:
+    requestedLanguage === "bulgarian" || requestedLanguage === "english"
+      ? requestedLanguage
+      : "english",
   upper: params.get("upper") === "true",
   numbers: params.get("numbers") === "true",
   symbols: params.get("symbols") === "true",
@@ -72,9 +77,18 @@ const minBalloons = opt.min;
 const difficultyMultiplier = difficultySetting.multiplier;
 
 // Character pools
+const ALPHABETS = {
+  english: {
+    lower: "abcdefghijklmnopqrstuvwxyz",
+    upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  },
+  bulgarian: {
+    lower: "абвгдежзийклмнопрстуфхцчшщъьюя",
+    upper: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ",
+  },
+};
 const CHARS = {
-  lower: "abcdefghijklmnopqrstuvwxyz",
-  upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  ...ALPHABETS[opt.language],
   numbers: "0123456789",
   symbols: "~`!@#$%^&*()_+-=[]{}|;:',.<>/?\"\\",
 };
@@ -349,7 +363,7 @@ function buildFingersLayer() {
 }
 
 function isUpperAlpha(ch) {
-  return /^[A-Z]$/.test(ch);
+  return ch !== ch.toLowerCase() && ch === ch.toUpperCase();
 }
 
 function keyInfoForChar(ch) {

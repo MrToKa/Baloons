@@ -1,4 +1,7 @@
 const form = document.getElementById("setup-form");
+const typingLanguageSelect = document.getElementById("typing-language");
+const lowercaseLabel = document.getElementById("lowercase-label");
+const uppercaseLabel = document.getElementById("uppercase-label");
 const upperInput = document.getElementById("upper");
 const numbersInput = document.getElementById("numbers");
 const symbolsInput = document.getElementById("symbols");
@@ -12,8 +15,19 @@ const startButton = document.getElementById("start-game");
 
 const HELPER_ENABLED_STORAGE_KEY = "play-helper-enabled";
 const HELPER_MODE_STORAGE_KEY = "play-helper-mode";
+const TYPING_LANGUAGE_STORAGE_KEY = "typing-language";
 const MIN_BALLOONS = 3;
 const MAX_BALLOONS = 20;
+const LANGUAGE_LABELS = {
+  english: {
+    lower: "Lowercase letters (a-z) - mandatory",
+    upper: "Uppercase letters (A-Z)",
+  },
+  bulgarian: {
+    lower: "Lowercase letters (а-я) - mandatory",
+    upper: "Uppercase letters (А-Я)",
+  },
+};
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -38,12 +52,30 @@ function restoreHelperPreferences() {
   }
 }
 
+function restoreTypingLanguagePreference() {
+  try {
+    const language = localStorage.getItem(TYPING_LANGUAGE_STORAGE_KEY);
+    if (language === "english" || language === "bulgarian") {
+      typingLanguageSelect.value = language;
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 function storePreference(key, value) {
   try {
     localStorage.setItem(key, value);
   } catch {
     // Ignore storage failures.
   }
+}
+
+function syncCharacterLabels() {
+  const labels =
+    LANGUAGE_LABELS[typingLanguageSelect.value] || LANGUAGE_LABELS.english;
+  lowercaseLabel.textContent = labels.lower;
+  uppercaseLabel.textContent = labels.upper;
 }
 
 function validateRange() {
@@ -88,6 +120,11 @@ helperModeSelect.addEventListener("change", () => {
   storePreference(HELPER_MODE_STORAGE_KEY, helperModeSelect.value);
 });
 
+typingLanguageSelect.addEventListener("change", () => {
+  syncCharacterLabels();
+  storePreference(TYPING_LANGUAGE_STORAGE_KEY, typingLanguageSelect.value);
+});
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -100,6 +137,7 @@ form.addEventListener("submit", (event) => {
       : "keyboard"
     : "none";
   const params = new URLSearchParams({
+    language: typingLanguageSelect.value,
     upper: String(upperInput.checked),
     numbers: String(numbersInput.checked),
     symbols: String(symbolsInput.checked),
@@ -112,6 +150,8 @@ form.addEventListener("submit", (event) => {
   window.location.href = `baloons.html?${params.toString()}`;
 });
 
+restoreTypingLanguagePreference();
 restoreHelperPreferences();
+syncCharacterLabels();
 validateRange();
 syncHelperControls();

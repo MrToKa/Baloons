@@ -23,16 +23,27 @@
       <h1 style="margin: 0 0 12px; text-align: center">Balloon Game - Setup</h1>
 
       <fieldset>
+        <legend>Typing language</legend>
+        <div>
+          <label for="typing-language">Alphabet used during play</label>
+          <select id="typing-language">
+            <option value="english" selected>English</option>
+            <option value="bulgarian">Bulgarian</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Characters</legend>
         <div>
           <label>
             <input type="checkbox" checked disabled />
-            Lowercase letters (a-z) - mandatory
+            <span id="lowercase-label">Lowercase letters (a-z) - mandatory</span>
           </label>
           <br />
           <label>
             <input id="upper" type="checkbox" />
-            Uppercase letters (A-Z)
+            <span id="uppercase-label">Uppercase letters (A-Z)</span>
           </label>
           <br />
           <label>
